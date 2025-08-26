@@ -21,7 +21,7 @@ class HikvisionClient:
         self.loop = loop
 
     def _test_connection(self):
-        """Tests the connection to the device."""
+        # Test connection.
         try:
             response = requests.get(f"{self.base_url}/ISAPI/System/deviceInfo", auth=self.auth, timeout=5)
             response.raise_for_status()
@@ -32,7 +32,7 @@ class HikvisionClient:
             raise ConnectionError(f"Failed to connect to device: {e}")
 
     def start_listening(self):
-        """Starts listening for events from the device."""
+        # Start listening.
         if not self._test_connection():
             return
 
@@ -47,7 +47,7 @@ class HikvisionClient:
             logger.error(f"Connection to event stream failed: {e}")
 
     def stop_listening(self):
-        """Stops the listening service."""
+        # Stop listening.
         self._stop_event.set()
         logger.info(f"Stopped listening for events from {self.host}")
 
@@ -69,7 +69,7 @@ class HikvisionClient:
             while boundary.encode() in buffer:
                 part, buffer = buffer.split(boundary.encode(), 1)
                 if part:
-                    # The last boundary has an extra '--' at the end
+                    # Handle boundary.
                     if part.strip() == b'--':
                         break
                     self.handle_part(part.strip())
@@ -83,9 +83,9 @@ class HikvisionClient:
         
         if 'application/json' in headers:
             try:
-                # The body might have some leading/trailing non-json data
+                # Clean body.
                 body_str = body.decode('utf-8', errors='ignore').strip()
-                # Find the start and end of the json
+                # Find JSON.
                 start = body_str.find('{')
                 end = body_str.rfind('}') + 1
                 if start != -1 and end != 0:
@@ -100,7 +100,7 @@ class HikvisionClient:
                 logger.error(f"Error handling part: {e}")
 
     def send_telegram_message(self, event):
-        """Parses the event and sends a message to Telegram."""
+        # Send message.
         ip_address = event.get('ipAddress')
         date_time = event.get('dateTime')
         
@@ -110,7 +110,7 @@ class HikvisionClient:
         sub_event_type = access_controller_event.get('subEventType')
         pic_url = event.get('ACSPic')
 
-        # Check if any of the required fields are None
+        # Check fields.
         if not all([ip_address, date_time, name, major_event_type, sub_event_type]):
             logger.info(f"Skipping message because some fields are None: {event}")
             return
@@ -135,6 +135,6 @@ class HikvisionClient:
 
         future = asyncio.run_coroutine_threadsafe(send_message_async(), self.loop)
         try:
-            future.result(timeout=10) # Wait for the coroutine to finish
+            future.result(timeout=10) # Wait for result.
         except Exception as e:
             logger.error(f"Error waiting for telegram message to be sent: {e}")

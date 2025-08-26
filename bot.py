@@ -1,7 +1,9 @@
-import os
-import logging
 import asyncio
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+import logging
+import os
+import threading
+
+from telegram import ReplyKeyboardRemove, Update
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -13,21 +15,21 @@ from telegram.ext import (
 
 from hikvision import HikvisionClient
 
-# Enable logging
+# Logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# States for conversation
+# States
 USERNAME, PASSWORD, DEVICE_IP, PORT, LISTENING = range(5)
 
-# Dictionary to store user sessions
+# Sessions
 user_sessions = {}
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Starts the conversation and asks for the username."""
+    # Start conversation.
     await update.message.reply_text(
         "Hi! I'm your Hikvision Event Bot.\n"
         "Let's set up your device. Please send me the username (default: admin)."
@@ -36,28 +38,32 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 async def username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the username and asks for the password."""
+    # Store username.
     context.user_data["username"] = update.message.text
     await update.message.reply_text("Great. Now, please send me the password.")
     return PASSWORD
 
 
 async def password(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the password and asks for the device IP."""
+    # Store password.
     context.user_data["password"] = update.message.text
-    await update.message.reply_text("Almost there. Please send me the device IP address.")
+    await update.message.reply_text(
+        "Almost there. Please send me the device IP address."
+    )
     return DEVICE_IP
 
 
 async def device_ip(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the device IP and asks for the port."""
+    # Store device IP.
     context.user_data["device_ip"] = update.message.text
-    await update.message.reply_text("Got it. Now, please send me the port number (default: 80).")
+    await update.message.reply_text(
+        "Got it. Now, please send me the port number (default: 80)."
+    )
     return PORT
 
 
 async def port(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the port, tries to connect, and starts listening."""
+    # Store port and connect.
     user = update.message.from_user
     context.user_data["port"] = update.message.text
 
@@ -75,9 +81,8 @@ async def port(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             loop=loop,
         )
         user_sessions[user.id] = client
-        
-        # Start listening in a separate thread
-        import threading
+
+        # Start listening.
         listener_thread = threading.Thread(target=client.start_listening)
         listener_thread.daemon = True
         listener_thread.start()
@@ -96,19 +101,22 @@ async def port(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stops the listening service for the user."""
+    # Stop listening.
     user = update.message.from_user
     if user.id in user_sessions:
         user_sessions[user.id].stop_listening()
         del user_sessions[user.id]
-        await update.message.reply_text("Stopped listening for events. Use /start to connect again.")
+        await update.message.reply_text(
+            "Stopped listening for events. Use /start to connect again."
+        )
     else:
         await update.message.reply_text("You are not currently listening for events.")
 
     return ConversationHandler.END
 
+
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Cancels and ends the conversation."""
+    # Cancel conversation.
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
     await update.message.reply_text(
@@ -119,27 +127,31 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 def main() -> None:
-    """Run the bot."""
-    # Create the Application and pass it your bot's token.
-    application = Application.builder().token(os.getenv("TELEGRAM_BOT_TOKEN")).build()
+    # Run bot.
+    application = (
+        Application.builder().token(os.getenv("TELEGRAM_BOT_TOKEN")).build()
+    )
 
-    # Add conversation handler with the states
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
             USERNAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, username)],
             PASSWORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, password)],
-            DEVICE_IP: [MessageHandler(filters.TEXT & ~filters.COMMAND, device_ip)],
+            DEVICE_IP: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, device_ip)
+            ],
             PORT: [MessageHandler(filters.TEXT & ~filters.COMMAND, port)],
             LISTENING: [CommandHandler("stop", stop)],
         },
-        fallbacks=[CommandHandler("cancel", cancel), CommandHandler("stop", stop)],
+        fallbacks=[
+            CommandHandler("cancel", cancel),
+            CommandHandler("stop", stop),
+        ],
     )
 
     application.add_handler(conv_handler)
-
-    # Run the bot until the user presses Ctrl-C
     application.run_polling()
+
 
 if __name__ == "__main__":
     main()
