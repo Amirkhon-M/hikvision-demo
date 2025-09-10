@@ -1,0 +1,111 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Login - Attendance Tracking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #0056b3;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        form div {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="password"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            transition: background-color 0.3s ease;
+        }
+        button.stop {
+            background-color: #dc3545;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #e9ecef;
+            color: #333;
+            text-align: center;
+        }
+        .status-indicator {
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .status-indicator.listening {
+            color: green;
+        }
+        .status-indicator.not-listening {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Panel</h1>
+        {% if message %}
+            <div class="message">{{ message }}</div>
+        {% endif %}
+        <div class="status-indicator {% if is_listening %}listening{% else %}not-listening{% endif %}">
+            Status: {% if is_listening %}Listening{% else %}Not Listening{% endif %}
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <div>
+                <label for="device_ip">Device IP:</label>
+                <input type="text" id="device_ip" name="device_ip" value="{{ request.POST.device_ip }}" required>
+            </div>
+            <div>
+                <label for="port">Port:</label>
+                <input type="text" id="port" name="port" value="{{ request.POST.port|default:'80' }}" required>
+            </div>
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" value="{{ request.POST.username|default:'admin' }}" required>
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" value="{{ request.POST.password }}" required>
+            </div>
+            <button type="submit" name="action" value="start">Start Listening</button>
+            <button type="submit" name="action" value="stop" class="stop">Stop Listening</button>
+        </form>
+    </div>
+</body>
+</html>

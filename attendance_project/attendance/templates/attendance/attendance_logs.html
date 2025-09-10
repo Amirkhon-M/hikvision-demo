@@ -1,0 +1,107 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Attendance Logs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #0056b3;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .log-entry {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .log-entry img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            margin-right: 20px;
+            border-radius: 5px;
+        }
+        .log-details {
+            flex-grow: 1;
+        }
+        .log-details p {
+            margin: 5px 0;
+        }
+        .log-details .name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+        }
+        .log-details .datetime {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .no-logs {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        .logout-button {
+            display: block;
+            width: fit-content;
+            margin: 20px auto;
+            background-color: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+        .logout-button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Attendance Logs</h1>
+        {% if logs %}
+            {% for log in logs %}
+                <div class="log-entry">
+                    {% if log.photo %}
+                        <img src="{{ log.photo.url }}" alt="{{ log.name }}">
+                    {% endif %}
+                    <div class="log-details">
+                        <p class="name">{{ log.name }}</p>
+                        <p class="datetime">{{ log.datetime }}</p>
+                        <p>Major Event: {{ log.major_event_type }}</p>
+                        <p>Sub Event: {{ log.sub_event_type }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-logs">No attendance logs found.</p>
+        {% endif %}
+        <form action="{% url 'parent_logout' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="logout-button">Logout</button>
+        </form>
+    </div>
+</body>
+</html>
